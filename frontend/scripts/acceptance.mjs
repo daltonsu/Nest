@@ -36,6 +36,11 @@ try{
  console.log('PASS: real hub card resolution');
  await hub.call('/v1/events',{method:'POST',identity:'source',body:{id:crypto.randomUUID(),type:'try.slow',subject:'isolated-stop-test'}});s=await until(s=>s.runs.some(r=>r.state==='claimed'));const running=s.runs.find(r=>r.state==='claimed');await request(`/api/runs/${running.id}/cancel`,{});await until(s=>s.runs.some(r=>r.id===running.id&&r.state==='cancelled'));
  console.log('PASS: real hub process cancellation');
+ const draft=await request('/api/rules');const edited=JSON.parse(draft.content);edited.rules[0].name='网页保存的试跑规则';
+ const invalid=await request('/api/rules/validate',{content:'{'});assert.equal(invalid.valid,false);assert.equal((await request('/api/rules')).version,draft.version);
+ const saved=await request('/api/rules',{content:JSON.stringify(edited,null,2)+'\n',version:draft.version});assert.equal(saved.validation.valid,true);
+ await until(state=>state.lines.some(rule=>rule.name==='网页保存的试跑规则'));
+ console.log('PASS: web rules save → real hub automatically reloads without restart');
  if(process.argv.includes('--serve')){await request('/api/try',{requestId:crypto.randomUUID()});await until(s=>s.cards.length===1);console.log('BROWSER_ACCEPTANCE_URL='+url);for(const signal of ['SIGTERM','SIGINT'])process.on(signal,()=>cleanup().then(()=>process.exit(0)));}
  else await cleanup();
 }catch(error){await cleanup();throw error;}

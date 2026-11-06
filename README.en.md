@@ -77,7 +77,7 @@ Anything the agent can handle alone takes the auto-loop at the top of the diagra
 
 ### Write your rules (`rules.json`)
 
-No glue code needed. Open `~/.agent-autoloop/rules.json` and, under `rules`, declare **what happened, who handles it, and where they work**. Set `to` to a name already under `agents`. For example, write a brief every morning at 9:
+Use the Nest workspace’s rules editor to edit, validate, and save JSON, or open `~/.agent-autoloop/rules.json` directly. Under `rules`, declare **what happened, who handles it, and where they work**. Set `to` to a name already under `agents`. For example, write a brief every morning at 9:
 
 ```json
 {

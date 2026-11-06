@@ -4,19 +4,21 @@ import {fileURLToPath} from 'node:url';
 import {resolve,dirname} from 'node:path';
 import {createHub,AppError} from './lib/hub.mjs';
 import {buildTasks,traceFor} from './lib/tasks.mjs';
+import {createRulesStore} from './lib/rules.mjs';
 
 const root=dirname(fileURLToPath(import.meta.url));
 const assets=new Map([['/',['index.html','text/html; charset=utf-8']],['/app.js',['app.js','text/javascript; charset=utf-8']],['/views.js',['views.js','text/javascript; charset=utf-8']],['/style.css',['style.css','text/css; charset=utf-8']],['/favicon.svg',['favicon.svg','image/svg+xml']]]);
+assets.set('/rules-editor.js',['rules-editor.js','text/javascript; charset=utf-8']);
 const security={
  'cache-control':'no-store', 'x-content-type-options':'nosniff', 'referrer-policy':'no-referrer',
  'x-frame-options':'DENY',
  'content-security-policy':"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
 };
 const positive=value=>/^[1-9][0-9]*$/.test(String(value))&&Number.isSafeInteger(Number(value));
-async function jsonBody(req) {
+async function jsonBody(req,limit=16384) {
  if (!/^application\/json(?:;|$)/i.test(req.headers['content-type']??'')) throw new AppError(415,'请使用 JSON 请求。');
  const chunks=[];let size=0;
- for await (const chunk of req) {size+=chunk.length;if(size>16384)throw new AppError(413,'提交内容过长。');chunks.push(chunk);}
+ for await (const chunk of req) {size+=chunk.length;if(size>limit)throw new AppError(413,'提交内容过长。');chunks.push(chunk);}
  try {const body=JSON.parse(Buffer.concat(chunks).toString());if(!body||Array.isArray(body)||typeof body!=='object')throw 0;return body;}catch{throw new AppError(400,'提交内容不是有效的 JSON 对象。');}
 }
 async function mapLimit(items,limit,fn) {
@@ -24,7 +26,7 @@ async function mapLimit(items,limit,fn) {
  await Promise.all(Array.from({length:Math.min(limit,items.length)},async()=>{for(;;){const i=index++;if(i>=items.length)return;results[i]=await fn(items[i]);}}));
  return results;
 }
-export function createApp({hub=createHub(),port=3351}={}) {
+export function createApp({hub=createHub(),port=3351,rules=createRulesStore({home:hub.home})}={}) {
  const traces=new Map();
  async function factsFor(run,epoch) {
   const signature=JSON.stringify([run.state,run.attempts,run.session,run.summary,run.error,run.stopping,epoch]);
@@ -59,6 +61,7 @@ export function createApp({hub=createHub(),port=3351}={}) {
    }
    if(req.method==='GET'&&url.pathname==='/healthz')return send(200,{ok:true,service:'agent-autoloop-web',version:'0.1.0'});
    if(url.pathname.startsWith('/api/')&&req.headers['x-autoloop-request']!=='1')throw new AppError(403,'请通过工作台访问接口。');
+   if(req.method==='GET'&&url.pathname==='/api/rules')return send(200,rules.read());
    if(req.method==='GET'&&url.pathname==='/api/state') {
     const before=url.searchParams.get('before');if(before!==null&&!positive(before))throw new AppError(400,'分页编号不正确。');
     return send(200,await snapshot(before));
@@ -70,7 +73,10 @@ export function createApp({hub=createHub(),port=3351}={}) {
    }
    if(req.method==='POST') {
     if(req.headers.origin!==origin)throw new AppError(403,'需要工作台的同源请求。');
-    const body=await jsonBody(req);
+    const isRules=url.pathname==='/api/rules'||url.pathname==='/api/rules/validate';
+    const body=await jsonBody(req,isRules?2*1024*1024:16384);
+    if(url.pathname==='/api/rules/validate')return send(200,rules.validate(body.content));
+    if(url.pathname==='/api/rules')return send(200,rules.save(body));
     const card=/^\/api\/cards\/([1-9][0-9]*)\/(answer|resolve)$/.exec(url.pathname);
     if(card) {
      if(!positive(card[1]))throw new AppError(400,'卡片编号不正确。');
@@ -101,7 +107,7 @@ export function createApp({hub=createHub(),port=3351}={}) {
     }
    }
    throw new AppError(404,'没有这个地址。');
-  }catch(error){if(!req.complete)res.setHeader('connection','close');send(error instanceof AppError?error.status:500,error instanceof AppError?{error:error.message}:{error:'工作台暂时无法完成请求。'});}
+  }catch(error){if(!req.complete)res.setHeader('connection','close');send(error instanceof AppError?error.status:500,error instanceof AppError?{error:error.message,...error.details}:{error:'工作台暂时无法完成请求。'});}
  });
  return server;
 }

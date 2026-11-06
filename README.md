@@ -84,7 +84,7 @@ Agent 结束了这一轮，问了你一个问题。它现在不占进程、不�
 
 ### 写一份规则（`rules.json`）
 
-不需要写胶水代码。打开 `~/.agent-autoloop/rules.json`，在 `rules` 里写清楚**什么事、交给谁、在哪个目录干**。`to` 填 `agents` 里已有的名字。比如每天早上 9 点写早报：
+可在 Nest 工作台「规则 → 编辑 rules.json」中修改、校验并保存，也可以直接打开 `~/.agent-autoloop/rules.json`。在 `rules` 里写清楚**什么事、交给谁、在哪个目录干**。`to` 填 `agents` 里已有的名字。比如每天早上 9 点写早报：
 
 ```json
 {

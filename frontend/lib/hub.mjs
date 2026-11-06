@@ -29,5 +29,5 @@ export function createHub({ home = process.env.AGENT_AUTOLOOP_HOME || join(homed
     }
     return data;
   }
-  return {call,config};
+  return {call,config,home};
 }

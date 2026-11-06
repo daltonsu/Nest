@@ -29,11 +29,31 @@
    <div id="filters" class="filters" aria-label="按事项状态筛选"></div>
    <div class="workspace"><section class="task-column" aria-label="事项列表"><div class="list-heading"><span id="list-label">最近事项</span><span id="task-count">—</span></div><div id="task-list"><div class="list-empty">正在载入…</div></div><div id="pagination" class="pagination"></div></section><section id="task-detail" class="detail-column" aria-label="事项详情"><div class="empty-detail"><span class="empty-symbol">∞</span><h2>每件事，都有后续。</h2><p>选择事项，查看进度或做一个决定。</p></div></section></div>
   </section>
-  <section id="rules-view" class="view" hidden><div class="page-heading"><div><div class="eyebrow">AUTOMATION</div><h1>规则</h1><p>什么时候开始、交给谁，以及如何跟进。</p></div><span class="subtle-tag">当前生效 · 只读</span></div><div id="rules-content"></div></section>
+  <section id="rules-view" class="view" hidden>
+   <div class="page-heading"><div><div class="eyebrow">AUTOMATION</div><h1>规则</h1><p>什么时候开始、交给谁，以及如何跟进。</p></div><span class="subtle-tag">本机规则</span></div>
+   <div id="rules-mode" class="filters" aria-label="规则页面视图"><button class="filter" data-rules-mode="overview" aria-pressed="true">规则概览</button><button class="filter" data-rules-mode="editor" aria-pressed="false">编辑 rules.json</button></div>
+   <div id="rules-content"></div>
+   <section id="rules-editor-panel" hidden aria-label="规则代码编辑器">
+    <div class="rules-editor-layout">
+     <div class="rules-code-panel">
+      <div class="rules-editor-toolbar"><div class="rules-file-name"><code>rules.json</code><span id="rules-file-status" class="pill">尚未载入</span></div><div class="rules-tools"><button id="rules-reload" class="button ghost" type="button">重新载入</button><button id="rules-format" class="button" type="button" disabled>格式化</button></div></div>
+      <label for="rules-source" class="sr-only">规则 JSON 代码</label>
+      <div class="rules-code-area"><pre id="rules-line-numbers" aria-hidden="true">1</pre><textarea id="rules-source" spellcheck="false" autocomplete="off" autocapitalize="off" wrap="off" aria-describedby="rules-save-note" disabled></textarea></div>
+      <div class="rules-editor-footer"><span id="rules-position">第 1 行，第 1 列</span><span>JSON · UTF-8</span></div>
+     </div>
+     <aside class="rules-help" aria-label="规则检查与说明">
+      <div id="rules-feedback" class="rules-feedback" role="status" aria-live="polite" data-kind="pending"><h2 id="rules-feedback-title">等待载入规则</h2><ul id="rules-issues" hidden></ul></div>
+      <div class="rules-guide"><h2>一条规则，说明这几件事</h2><dl><dt>when</dt><dd>何时触发：事件类型或 cron 定时。</dd><dt>to</dt><dd>交给哪个已登记的 Agent。</dd><dt>cwd</dt><dd>在哪个目录执行。</dd><dt>prompt / skill</dt><dd>处理要求或要遵循的手册。</dd></dl><p>来源、Agent、通道也在此文件中配置。更多字段请沿用已有配置。</p></div>
+     </aside>
+    </div>
+    <div class="rules-save-bar"><p id="rules-save-note">只在点击保存时写入本机文件。保存后中台自动载入；已开始的轮次继续使用原配置。</p><div class="rules-save-actions"><button id="rules-validate" class="button" type="button" disabled>校验规则</button><button id="rules-save" class="button primary" type="button" disabled>保存规则</button></div></div>
+   </section>
+  </section>
   <section id="connections-view" class="view" hidden><div class="page-heading"><div><div class="eyebrow">CONNECTIONS</div><h1>连接</h1><p>事件从哪里来，谁来处理，如何通知你。</p></div></div><div id="connections-content"></div></section>
   <footer id="usage-footer" class="usage-footer">用量以中台报告为准。</footer>
  </main>
 </div>
+<dialog id="rules-reload-dialog" aria-labelledby="rules-reload-title"><h2 id="rules-reload-title">重新载入规则？</h2><p>当前有未保存的修改。重新载入会用磁盘上的最新版本替换页面内容，请先复制需要保留的草稿。</p><div class="dialog-actions"><button id="rules-cancel-reload" type="button" class="button">保留草稿</button><button id="rules-confirm-reload" type="button" class="button primary">丢弃修改并载入</button></div></dialog>
 <dialog id="action-dialog" aria-labelledby="dialog-title"><form id="action-form"><div class="dialog-head"><span class="eyebrow">确认操作</span><button type="button" class="icon-button" data-close-dialog aria-label="关闭">×</button></div><h2 id="dialog-title"></h2><p id="dialog-description"></p><div id="dialog-fields"></div><p id="dialog-error" role="alert" hidden></p><div class="dialog-actions"><button type="button" class="button" data-close-dialog>取消</button><button type="submit" id="dialog-submit" class="button primary">确认</button></div></form></dialog>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 <noscript>工作台需要启用 JavaScript 才能查看状态和回答卡片。</noscript>

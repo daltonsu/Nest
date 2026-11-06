@@ -1,11 +1,12 @@
 import {escapeHTML as e,icon,labels,time,taskItem,detailView,timelineView,rulesView,connectionsView,spendingText} from './views.js';
+import {createRulesEditor} from './rules-editor.js';
 const $=selector=>document.querySelector(selector);
 const ui={data:null,nav:'work',filter:'all',selected:null,before:null,online:false,drafts:new Map(),busy:new Set(),traceKey:'',toastTimer:null,action:null};
 let refreshPromise=null,detailFingerprint='',traceVersion=0;
 async function api(path,body) {
  const response=await fetch(path,{method:body===undefined?'GET':'POST',headers:{'x-autoloop-request':'1',...(body!==undefined&&{'content-type':'application/json'})},...(body!==undefined&&{body:JSON.stringify(body)}),signal:AbortSignal.timeout(20000),cache:'no-store'});
  const data=await response.json();
- if(!response.ok){const error=new Error(data.error||'请求没有完成。');error.status=response.status;throw error;}
+ if(!response.ok){const error=new Error(data.error||'请求没有完成。');error.status=response.status;error.details=data;throw error;}
  return data;
 }
 function toast(message){clearTimeout(ui.toastTimer);$('#toast').textContent=message;$('#toast').hidden=false;ui.toastTimer=setTimeout(()=>$('#toast').hidden=true,4500);}
@@ -115,6 +116,7 @@ $('#action-form').addEventListener('submit',async event=>{
  }catch(error){$('#dialog-error').textContent=error.message;$('#dialog-error').hidden=false;if(error.status===409)await refresh(true);}finally{$('#dialog-submit').disabled=false;}
 });
 $('#action-dialog').addEventListener('close',()=>ui.action=null);
+createRulesEditor({request:api,onSaved:()=>refresh(true)});
 await refresh();
 setInterval(()=>{if(!document.hidden)refresh();},3000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
