@@ -1,0 +1,21 @@
+{
+  "name": "agent-autoloop-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Agent Autoloop 本机事项工作台",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node --watch server.mjs",
+    "test": "node --test test/*.test.mjs",
+    "check": "node scripts/check.mjs",
+    "service:install": "node scripts/service.mjs install",
+    "service:stop": "node scripts/service.mjs stop",
+    "service:status": "node scripts/service.mjs status",
+    "test:integration": "node scripts/acceptance.mjs",
+    "service:remove": "node scripts/service.mjs remove"
+  }
+}

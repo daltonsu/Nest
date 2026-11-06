@@ -1,0 +1,25 @@
+// Prevent a web page from borrowing the owner's credentials or mutating a stale decision.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createServer,get} from 'node:http';
+import {mkdtemp,writeFile,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {createApp} from '../server.mjs';
+import {createHub} from '../lib/hub.mjs';
+import {cardForm,safeLink} from '../public/views.js';
+const state=()=>({now:'2026-11-06T03:32:00Z',timezone:'Asia/Shanghai',cards:[{id:1,version:1,kind:'ask',state:'open',title:'颜色',rule:'试一下',options:['蓝色','绿色']}],recentCards:[],runs:[],lines:[{source:'local',types:['try.*']}],agents:[],channels:[],sources:[],elsewhere:[]});
+async function fixture(t){const calls=[];const hub={call:async(path,opts)=>{calls.push([path,opts]);if(path==='/v1/state')return state();return {ok:true};},config:async()=>({source:{name:'local'}})};const app=createApp({hub,port:0});await new Promise(r=>app.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>app.close(r)));const url=`http://127.0.0.1:${app.address().port}`;return {url,calls,request:(path,body,headers={})=>fetch(url+path,{method:body===undefined?'GET':'POST',headers:{'x-autoloop-request':'1',...(body!==undefined&&{'content-type':'application/json',origin:url}),...headers},...(body!==undefined&&{body:JSON.stringify(body)})})};}
+test('state requires the client header and rejects cross-site requests',async t=>{const f=await fixture(t);assert.equal((await fetch(f.url+'/api/state')).status,403);assert.equal((await f.request('/api/state',undefined,{origin:'https://untrusted.example'})).status,403);assert.equal((await f.request('/api/state')).status,200);});
+test('DNS rebinding hostnames are rejected before any hub access',async t=>{const f=await fixture(t);const status=await new Promise((resolve,reject)=>{get(f.url+'/api/state',{headers:{host:'evil.example','x-autoloop-request':'1'}},r=>{r.resume();resolve(r.statusCode);}).on('error',reject);});assert.equal(status,403);assert.equal(f.calls.length,0);});
+test('zero-based option zero is forwarded, without arbitrary client properties',async t=>{const f=await fixture(t);const r=await f.request('/api/cards/1/answer',{version:1,choice:0,key:'not-used',by:'fake'});assert.equal(r.status,200);assert.deepEqual(f.calls.at(-1),['/v1/cards/1/answer',{method:'POST',body:{choice:0}}]);});
+test('stale cards and invalid choices cannot send an answer',async t=>{const f=await fixture(t);assert.equal((await f.request('/api/cards/1/answer',{version:2,choice:0})).status,409);assert.equal((await f.request('/api/cards/1/answer',{version:1,choice:-1})).status,400);assert.equal((await f.request('/api/cards/1/answer',{version:1,choice:0,text:'另一项'})).status,400);assert.ok(f.calls.every(([p])=>p==='/v1/state'));});
+test('writes require a matching Origin and JSON content type',async t=>{const f=await fixture(t);assert.equal((await f.request('/api/cards/1/answer',{version:1,choice:0},{origin:'null'})).status,403);assert.equal((await f.request('/api/cards/1/answer',{version:1,choice:0},{'content-type':'text/plain'})).status,415);});
+test('try events use an idempotent identifier and the existing source identity',async t=>{const f=await fixture(t);const id='38c3d1ed-3999-425e-9fce-4b01578fd335';assert.equal((await f.request('/api/try',{requestId:id})).status,200);const [path,options]=f.calls.at(-1);assert.equal(path,'/v1/events');assert.equal(options.identity,'source');assert.equal(options.body.id,'web-try-'+id);});
+test('credentials stay on the server and file paths are not exposed',async t=>{const home=await mkdtemp(join(tmpdir(),'autoloop-web-test-'));t.after(()=>rm(home,{recursive:true,force:true}));const secret='test-owner-not-for-browser';let auth;
+ const upstream=createServer((req,res)=>{auth=req.headers.authorization;res.setHeader('content-type','application/json');res.end(JSON.stringify(state()));});await new Promise(r=>upstream.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>upstream.close(r)));
+ await writeFile(join(home,'config.json'),JSON.stringify({owner:secret,url:`http://127.0.0.1:${upstream.address().port}`}),{mode:0o600});
+ const app=createApp({hub:createHub({home}),port:0});await new Promise(r=>app.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>app.close(r)));const url=`http://127.0.0.1:${app.address().port}`;
+ const response=await fetch(url+'/api/state',{headers:{'x-autoloop-request':'1'}});const text=await response.text();assert.equal(response.status,200);assert.equal(auth,'Bearer '+secret);assert.ok(!text.includes(secret));assert.ok(!text.includes(home));assert.equal((await fetch(url+'/config.json')).status,404);
+});
+test('untrusted card content renders as text and dangerous links are rejected',()=>{const html=cardForm({id:1,version:1,title:'<img src=x onerror=alert(1)>',text:'<script>bad()</script>',kind:'ask',options:['<svg onload=bad()>']});assert.ok(!html.includes('<img'));assert.ok(!html.includes('<script>'));assert.ok(html.includes('&lt;img'));assert.equal(safeLink('javascript:alert(1)'),null);assert.ok(safeLink('codex://threads/example'));});

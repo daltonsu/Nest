@@ -2,6 +2,10 @@
 
 用户请你装好 Agent 自动化中台。先安装，再走一遍提问和继续处理；能自己做的直接做。
 
+## 从 Nest 仓库运行前后端
+
+已有 `~/.agent-autoloop/config.json` 时，在本仓库根目录运行 `npm start`，同时启动后端与 `frontend/` 工作台。macOS 常驻运行使用 `npm run service:install`；停止并取消登录启动使用 `npm run service:stop`。二者不要同时运行。无需重新初始化数据、安装上游程序或复制密钥进仓库，详细说明见 [frontend/README.md](frontend/README.md)。以下是独立安装上游后端的方法。
+
 ## 安装
 
 支持 macOS、Linux。Windows 版待定：作者这个周末（11 月 7、8 日）回家后开发并做兼容性测试，进度见 [#17](https://github.com/KKKKhazix/agent-autoloop/issues/17)，现在还不能直接装。在 WSL2 里按 Linux 安装能跑通（有用户实测过），要知道这几件事：系统服务要发行版开着 systemd（`/etc/wsl.conf` 里 `systemd=true`，没开就加 `--no-service`，自己运行 `agent-autoloop up`），默认也不会在没人登录时启动，要的话运行 `loginctl enable-linger`；桌面通知到不了 Windows 桌面，用 `agent-autoloop status` 看卡片，或者接飞书等通道；用 `command` 接的 Agent 不上报用量，Token 和费用显示“没上报”；WSL2 本身要占 1GB 左右内存。

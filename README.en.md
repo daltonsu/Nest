@@ -6,6 +6,12 @@
 
 [Get started](#get-started) · [Recipes](#ready-to-use-recipes) · [Plugins](#plugin-ecosystem-swap-any-of-the-four-sides) · [Kernel](#four-kernel-mechanisms) · [Docs](#documentation)
 
+## Nest local workspace
+
+This repository contains the Agent Autoloop backend and an independent HTTP client in [`frontend/`](frontend/README.md). With an existing local configuration, run `npm start` at the repository root to start both services; Ctrl+C stops both. On macOS, `npm run service:install` installs or restarts the login services, `npm run service:status` checks them, and `npm run service:stop` stops them and removes login startup. Stop the login services before starting a foreground instance.
+
+The web app defaults to `http://127.0.0.1:3351`, and the backend to `http://127.0.0.1:3350`. Both use the existing configuration, rules, and records in `~/.agent-autoloop`; credentials and databases stay outside the repository. The upstream backend guide follows below.
+
 ![Architecture](docs/architecture.en.svg)
 
 ## What problem does it solve?
@@ -16,7 +22,7 @@ Most of us use command-line agents like Claude Code or Codex by babysitting a te
 
 - **One machine, one install command.** Runs on your Mac or Linux machine. No cloud server or inbound ports required.
 - **Connect a new agent in one line.** No SDK, no agent source code to fork. Any CLI tool that takes a prompt and prints a final reply can plug in.
-- **No web dashboard.** Cards reach you on Feishu, DingTalk, WeCom, Slack, Discord, or desktop notifications when you are needed. Everything else is one command away.
+- **Web, CLI, and notification channels.** The Nest workspace shows progress, answers cards, and stops tasks. Cards can also reach you on Feishu, DingTalk, WeCom, Slack, Discord, or desktop notifications.
 
 ## Get started
 
