@@ -10,6 +10,8 @@
 
 本仓库保留 Agent Autoloop 后端，Web 事项工作台在 [`frontend/`](frontend/README.md)，通过 HTTP 接口连接后端。
 
+`parent/main` 保存上游原版，`main` 是个人稳定版。开发时从 main 创建临时 `codex/dev`，完整合回 main 并验证后删除；向原仓库提交 PR 使用 `contrib/<改动描述>`。远端、同步和贡献步骤见 [fork 开发流程](docs/fork-workflow.md)。
+
 已有本机配置时，在仓库根目录运行：
 
 ```sh

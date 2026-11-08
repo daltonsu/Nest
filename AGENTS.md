@@ -2,6 +2,16 @@
 
 先读 [docs/protocol.md](docs/protocol.md) 和 [架构图](docs/architecture.svg)：它们说明最终实现。
 
+## Nest 的 fork 开发约定
+
+- 分支与远端按 [fork 开发流程](docs/fork-workflow.md) 执行：`origin` 是 `daltonsu/Nest`，`upstream` 是 `KKKKhazix/agent-autoloop`。
+- `parent/main` 只镜像上游原版；`main` 是含已验证定制功能的个人稳定版。`codex/dev` 是临时开发分支：本次开发未结束时复用，仅不存在时从 main 创建；完整合入 main 并验证后切回 main，安全删除开发分支。没有其他未完成工作时只保留 parent/main 和 main；dev 是可选集成层。
+- 上游更新走 `upstream/main → parent/main → 本地 main`，使用普通 merge 保留上游祖先关系，验证通过后再推送或部署，不经含未完成任务的 codex/dev。
+- 向原仓库贡献时，从更新后的 parent/main 创建 `contrib/<改动描述>`，每个 PR 一条分支，只包含本次贡献；推送到自己的 fork，PR 目标为原仓库指定分支。
+- 本仓库默认以普通 merge 或快进交付，保留开发提交的祖先关系；删除前核实 codex/dev 已完整包含在 main、工作区干净且没有其他 worktree 占用，使用安全删除，不强删未合并分支，也不以归档代替用户要求的收尾。
+- codex/dev 不推送；普通个人交付默认只推送自己的 main，贡献 PR 使用独立 contrib 分支。已有授权直接沿用，未授权推送或发布时只完成本地工作。
+- 以下架构、验证和社区约定继续适用；上游的批量发布流程仅在本次任务包含发布时执行，不因本地开发自动创建 Release、推送标签或修改 Issue。
+
 ## 原则
 
 - **内核只收、只分、只派、只记。** `kernel/` 不主动连接任何东西，不知道任何产品的名字。`tests/purity.test.ts` 守着这几条，也守着 host、protocol、worker 不认识具体产品。新的产品、新的连接方式都是外面的插件。
